@@ -7,155 +7,310 @@ GO
 CREATE DATABASE APD_PHYSICALDES
 GO
 
-CREATE TABLE CUSTOMER --LƯU THÔNG TIN KHÁCH HÀNG
-(
-	CUSTOMER_IDENTIFIER CHAR(10), --INDENTIFIER
-	CUSTOMER_TELEPHONENUMBER CHAR(10),
-	CUSTOMER_NAME VARCHAR(30),
-	CUSTOMER_ADDRESS VARCHAR(30),
-	CUSTOMER_CITY VARCHAR(30),
-	CUSTOMER_STATE VARCHAR(30),
-	CUSTOMER_ZIPCODE VARCHAR(10),
-	CUSTOMER_CREDITRATING VARCHAR(10), --EXCELLENT/ GOOD/ FAIR/ POOR: ĐIỂM TÍN DỤNG
+USE APD_PHYSICALDES
 
-	CONSTRAINT PK_CUSTOMER
-	PRIMARY KEY (CUSTOMER_IDENTIFIER)
+CREATE TABLE Customer --LƯU THÔNG TIN KHÁCH HÀNG
+(
+	Customer_Identifier CHAR(10), --INDENTIFIER
+    Customer_TelephoneNumber CHAR(10),
+    Customer_Name NVARCHAR(50),
+    Customer_Address NVARCHAR(30),
+    Customer_City NVARCHAR(30),
+    Customer_State NVARCHAR(30),
+    Customer_ZipCode CHAR(10),
+    Customer_CreditRating CHAR(10), --EXCELLENT/ GOOD/ FAIR/ POOR: ĐIỂM TÍN DỤNG
+
+    CONSTRAINT PK_Customer
+    PRIMARY KEY (Customer_Identifier)
 )
 
-CREATE TABLE CREDIT_CARD --LƯU THÔNG TIN THẺ TÍN DỤNG CỦA KHÁCH HÀNG
-(
-	CUSTOMER_CREDITCARD_NUMBER VARCHAR(20), --INDENTIFIER
-	CUSTOMER_CREDITCARD_NAME CHAR(30), --NAPAS/ DEBIT VISA/ DEBIT MASTER/ CREDIT VISA/ CREDIT MASTER
-	CUSTOMERIDENTIFIER CHAR(10), --FOREIGN KEY
+CREATE TABLE Credit_Card --LƯU THÔNG TIN THẺ TÍN DỤNG CỦA KHÁCH HÀNG
+(   
+    Customer_CreditCard_Number CHAR(20), --INDENTIFIER
+    Customer_CreditCard_Name NVARCHAR(50), --NAPAS/ DEBIT VISA/ DEBIT MASTER/ CREDIT VISA/ CREDIT MASTER
+    CustomerIdentifier CHAR(10), --FOREIGN KEY
 
-	CONSTRAINT PK_CREDIT_CARD
-	PRIMARY KEY (CUSTOMER_CREDITCARD_NUMBER),
-	CONSTRAINT FK_CREDIT_CARD_CUSTOMER
-	FOREIGN KEY (CUSTOMERIDENTIFIER) REFERENCES CUSTOMER
+    CONSTRAINT PK_Credit_Card
+    PRIMARY KEY (Customer_CreditCard_Number),
+
+    CONSTRAINT FK_Credit_Card_Customer
+    FOREIGN KEY (CustomerIdentifier) REFERENCES Customer
+)
+--thêm thuộc tính Preferred để đánh dấu thẻ tín dụng ưa thích của khách hàng
+ALTER TABLE Credit_Card
+ADD Preferred BIT --1: PREFERRED, 0: NOT PREFERRED
+
+
+CREATE TABLE Orders --LƯU THÔNG TIN ĐƠN HÀNG CỦA KHÁCH HÀNG
+(
+    Order_Number CHAR(10),
+    Customer_PhoneNumber CHAR(10),
+    Customer_Identifier CHAR(10),
+    OrderDate DATE,
+    Shipping_Address NVARCHAR(30),
+    Shipping_City NVARCHAR(30),
+    Shipping_State NVARCHAR(30),
+    Shipping_ZipCode CHAR(10),
+    Customer_CreditCard_Number CHAR(20),
+    Shipping_Date DATE,
+    --derived attribute
+    TotalCost FLOAT,
+
+    CONSTRAINT PK_Orders
+    PRIMARY KEY (Order_Number),
+
+    CONSTRAINT FK_Orders_Credit_Card
+    FOREIGN KEY (Customer_CreditCard_Number)
+    REFERENCES Credit_Card,
+
+    CONSTRAINT FK_Orders__Customer
+    FOREIGN KEY (Customer_Identifier)
+    REFERENCES Customer,
 )
 
-CREATE TABLE ORDERS --LƯU THÔNG TIN ĐƠN HÀNG CỦA KHÁCH HÀNG
-(
-	ORDER_NUMBER CHAR(10),
-	CUSTOMER_PHONENUMBER CHAR(10),
-	CUSTOMER_IDENTIFIER CHAR(10),
-	ORDERDATE DATE,
-	SHIPPING_ADDRESS VARCHAR(30),
-	SHIPPING_CITY VARCHAR(30),
-	SHIPPING_STATE VARCHAR(30),
-	SHIPPING_ZIPCODE VARCHAR(10),
-	CUSTOMER_CREDITCARD_NUMBER VARCHAR(20),
-	SHIPPING_DATE DATE,
-	--derived attribute
-	TOTAL_PRICE FLOAT,
+CREATE TABLE Advertised_Item
+( 
+    Item_Number CHAR(10),
+    Item_Description NVARCHAR(100),
+    Item_Department NVARCHAR(20),
+    Item_Weight FLOAT,
+    Item_Color NVARCHAR(10),
+    Item_Price FLOAT,
 
-	CONSTRAINT PK_ORDERS
-	PRIMARY KEY (ORDER_NUMBER),
-
-	CONSTRAINT FK_ORDERED_ITEM_CREDIT_CARD		
-	FOREIGN KEY ( CUSTOMER_CREDITCARD_NUMBER)
-	REFERENCES CREDIT_CARD,
-
-	CONSTRAINT FK_ORDERED__CUSTOMER	
-	FOREIGN KEY (CUSTOMER_IDENTIFIER)
-	REFERENCES CUSTOMER,
+    CONSTRAINT PK_Advertised_Item
+    PRIMARY KEY (Item_Number)
 )
 
-CREATE TABLE ADVERTISED_ITEM
-(
-	ITEM_NUMBER CHAR(10),
-	ITEM_DESCRIPTION VARCHAR(100),
-	ITEM_DEPARTMENT VARCHAR(20),
-	ITEM_WEIGHT FLOAT,
-	ITEM_COLOR VARCHAR(10),
-	ITEM_PRICE	FLOAT,
+CREATE TABLE Supplier
+(   
+    Supplier_ID CHAR(10),
+    Supplier_Name NVARCHAR(20),
+    Supplier_Address NVARCHAR(30),
+    Supplier_City NVARCHAR(30),
+    Supplier_State NVARCHAR(30),
+    Supplier_ZipCode CHAR(10),
 
-	CONSTRAINT PK_ADVERTISED_ITEM
-	PRIMARY KEY (ITEM_NUMBER)
+    CONSTRAINT PK_Supplier
+    PRIMARY KEY (Supplier_ID)
 )
 
-CREATE TABLE SUPPLIER
+CREATE TABLE Order_Item
 (
-	SUPPLIER_ID CHAR(10),
-	SUPPLIER_NAME VARCHAR(20),
-	SUPPLIER_ADDRESS VARCHAR(30),
-	SUPPLIER_CITY VARCHAR(30),
-	SUPPLIER_STATE VARCHAR(30),
-	SUPPLIER_ZIPCODE VARCHAR(10),
+    Item_Number CHAR(10),
+    Order_Number CHAR(10),
+    Quantity_Ordered TINYINT, --SỐ LƯỢNG ĐẶT HÀNG
+    Selling_Price FLOAT, --GIÁ BÁN
+    Shipping_Date DATE,
 
-	CONSTRAINT PK_SUPPLIER
-	PRIMARY KEY (SUPPLIER_ID)
+    CONSTRAINT PK_Ordered_Item
+    PRIMARY KEY (Item_Number, Order_Number),
+
+    CONSTRAINT FK_Ordered_Item_Order
+    FOREIGN KEY (Order_Number)
+    REFERENCES Orders,
+
+    CONSTRAINT FK_Ordered_Item_Advertised_Item
+    FOREIGN KEY (Item_Number)
+    REFERENCES Advertised_Item,
 )
 
-CREATE TABLE ORDERED_ITEM
+CREATE TABLE Restock_Item
 (
-	ITEM_NUMBER CHAR(10),
-	ORDER_NUMBER CHAR(10),
-	QUANTITY_ORDERED TINYINT,
-	SELLING_PRICE FLOAT,
-	SHIPPING_DATE DATE,
+    Item_Number CHAR(10),
+    Supplier_ID CHAR(10),
+    Purchase_Price FLOAT, --GIÁ MUA
 
-	CONSTRAINT PK_ORDERED_ITEM
-	PRIMARY KEY (ITEM_NUMBER, ORDER_NUMBER),
+    CONSTRAINT PK_Restock_Item
+    PRIMARY KEY (Item_Number, Supplier_ID),
 
-	CONSTRAINT FK_ORDERED_ITEM_ORDER_
-	FOREIGN KEY (ORDER_NUMBER)
-	REFERENCES ORDERS,
+    CONSTRAINT FK_Restock_Item_Advertised_Item
+    FOREIGN KEY (Item_Number)
+    REFERENCES Advertised_Item,
 
-	CONSTRAINT FK_ORDERED_ITEM_ADVERTISED_ITEM
-	FOREIGN KEY (ITEM_NUMBER)
-	REFERENCES ADVERTISED_ITEM,
-
-)
-
-CREATE TABLE RESTOCK_ITEM
-(
-	ITEM_NUMBER CHAR(10),
-	SUPPLIER_ID CHAR(10),
-	PURCHARSE_PRICE FLOAT,
-
-	CONSTRAINT PK_RESTOCK_ITEM
-	PRIMARY KEY (ITEM_NUMBER, SUPPLIER_ID),
-
-	CONSTRAINT FK_RESTOCK_ITEM_ADVERTISED_ITEM
-	FOREIGN KEY (ITEM_NUMBER)
-	REFERENCES ADVERTISED_ITEM,
-
-	CONSTRAINT FK_RESTOCK_ITEM_SUPPLIER
-	FOREIGN KEY (SUPPLIER_ID)
-	REFERENCES SUPPLIER,
+    CONSTRAINT FK_Restock_Item_Supplier
+    FOREIGN KEY (Supplier_ID)
+    REFERENCES Supplier,
 )
 GO
 
+
+
 --B. INTEGITY CONSTRAINT
---Thuộc tính suy diễn TOTAL_PRICE của bảng ORDERS phụ thuộc vào thuộc tính QUANTITY_ORDERED và SELLING_PRICE của bảng ORDERED_ITEM
-create TRIGGER TR_TOTAL_PRICE
-ON ORDERED_ITEM
-AFTER INSERT, UPDATE 
+--1. Tổng chi phí của một đơn hàng phải bằng tổng giá trị của tất cả các mặt hàng trong đơn hàng.
+CREATE TRIGGER TR_TOTAL_COST
+ON Order_Item
+AFTER INSERT, UPDATE, DELETE
 AS
 BEGIN
-	UPDATE ORDERS
-	SET TOTAL_PRICE = (SELECT SUM(QUANTITY_ORDERED * SELLING_PRICE)
-						FROM ORDERED_ITEM
-						WHERE ORDER_NUMBER = INSERTED.ORDER_NUMBER)
-END
+    -- Cập nhật lại tổng chi phí cho đơn hàng sau khi có sự thay đổi
+    UPDATE O
+    SET O.TotalCost = (
+        SELECT SUM(I.Quantity_Ordered * I.Selling_Price)
+        FROM Order_Item I
+        WHERE I.Order_Number = O.Order_Number
+        GROUP BY I.Order_Number
+    )
+    FROM Orders O
+    JOIN (
+        -- Lấy tất cả các đơn hàng bị ảnh hưởng bởi thao tác INSERT, UPDATE hoặc DELETE
+        SELECT DISTINCT Order_Number 
+        FROM INSERTED
+        UNION
+        SELECT DISTINCT Order_Number 
+        FROM DELETED
+    ) AS A ON O.Order_Number = A.Order_Number;
+END;
+GO
+
+--2. Cập nhật customerID cho bảng Credit_Card khi có insert vào Orders
+CREATE TRIGGER TR_CUSTOMER_ID
+ON Orders
+AFTER INSERT
+AS
+BEGIN
+    -- Kiểm tra xem Customer_Identifier có tồn tại trong bảng Customer hay không
+    IF NOT EXISTS (SELECT * FROM Customer WHERE Customer_Identifier IN (SELECT Customer_Identifier FROM INSERTED))
+    BEGIN
+        RAISERROR('Customer Identifier not found in Customer table', 16, 1);
+        RETURN;
+    END
+
+    -- Kiểm tra xem Customer_CreditCard_Number đã được gán cho khách hàng khác chưa
+    IF EXISTS (
+        SELECT 1 
+        FROM Credit_Card C
+        JOIN INSERTED I ON C.Customer_CreditCard_Number = I.Customer_CreditCard_Number
+        WHERE C.CustomerIdentifier IS NOT NULL AND C.CustomerIdentifier != I.Customer_Identifier
+    )
+    BEGIN
+        RAISERROR('Credit Card has been used by another customer', 16, 1);
+        RETURN;
+    END
+    
+    --Nếu CusID trong Credit_Card và Orders giống nhau thì không làm gì
+    IF EXISTS (
+        SELECT 1 
+        FROM Credit_Card C
+        JOIN INSERTED I ON C.Customer_CreditCard_Number = I.Customer_CreditCard_Number
+        WHERE C.CustomerIdentifier = I.Customer_Identifier
+    )
+    RETURN;
+    -- Cập nhật CustomerIdentifier cho Credit_Card sau khi kiểm tra NULL
+    UPDATE C
+    SET C.CustomerIdentifier = I.Customer_Identifier
+    FROM Credit_Card C
+    JOIN INSERTED I ON C.Customer_CreditCard_Number = I.Customer_CreditCard_Number;
+END;
+GO
+
+
+--3. Giá Selling_Price phải bằng Item_Price của mặt hàng đó.
+CREATE TRIGGER TR_SELLING_PRICE
+ON Order_Item
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    --nếu Selling_Price không bằng Item_Price thì không thực hiện
+    IF NOT EXISTS (SELECT * FROM Advertised_Item WHERE Item_Price = (SELECT Selling_Price FROM INSERTED))
+        RAISERROR('Selling Price must be equal to Item Price', 16, 1);
+END;
+GO
+
+--4. Mỗi khách hàng chỉ có 1 thẻ tín dụng được đánh dấu là Preferred (group by CustomerIdentifier)
+CREATE TRIGGER TR_PREFERRED
+ON Credit_Card
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    --nếu có nhiều hơn 1 thẻ tín dụng được đánh dấu là Preferred thì không thực hiện
+    IF (SELECT COUNT(*) FROM Credit_Card WHERE Preferred = 1 GROUP BY CustomerIdentifier) > 1
+        RAISERROR('Only 1 Preferred Credit Card for each Customer', 16, 1);
+END;
+GO
+
+
+/*select * from Orders
+select * from Order_Item
+select * from Advertised_Item
+select * from Supplier
+select * from Restock_Item
+select * from Customer
+select * from Credit_Card*/
+
 
 --
 
 --INDEXES 
 
+--INSERT DATA
+
+
+
+
+
 --SELECT QUERY
 --1. Đối với một đơn đặt hàng của khách hàng cụ thể, tổng chi phí đơn hàng là bao nhiêu?
-SELECT ORDER_NUMBER, CUSTOMER_IDENTIFIER, TOTAL_PRICE
-FROM ORDERS
-WHERE ORDER_NUMBER = 'O0001'
+SELECT Order_Number, Customer_Identifier, TotalCost
+FROM Orders
+WHERE Order_Number = 'O0001'
 
 --2. Đối với một sản phẩm quảng cáo cụ thể, giá thấp nhất mà nhà cung cấp hiện đang cung cấp là bao nhiêu?
-SELECT ITEM_NUMBER, SUPPLIER_ID, MIN(PURCHARSE_PRICE)
-FROM RESTOCK_ITEM
---WHERE ITEM_NUMBER = 'I0001'
+SELECT A.Item_Number, A.Item_Description, A.Item_Department, A.Item_Weight, A.Item_Color, A.Item_Price, MIN(R.Purchase_Price) AS MinPurchasePrice
+FROM Advertised_Item A JOIN Restock_Item R ON A.Item_Number = R.Item_Number
+GROUP BY A.Item_Number, A.Item_Description, A.Item_Department, A.Item_Weight, A.Item_Color, A.Item_Price
+--WHERE Item_Number = 'I0001'
 
 --3. Khi thông tin khách hàng được truy xuất, bao gồm tất cả các số thẻ tín dụng của họ.
-SELECT C.CUSTOMER_IDENTIFIER, C.CUSTOMER_TELEPHONENUMBER, C.CUSTOMER_NAME, C.CUSTOMER_ADDRESS, C.CUSTOMER_CITY, C.CUSTOMER_STATE, C.CUSTOMER_ZIPCODE, C.CUSTOMER_CREDITRATING, O.CUSTOMER_CREDITCARD_NUMBER
-FROM CUSTOMER C JOIN ORDERS O ON C.CUSTOMER_IDENTIFIER = O.CUSTOMER_IDENTIFIER
+SELECT 
+    C.Customer_Identifier, 
+    C.Customer_TelephoneNumber, 
+    C.Customer_Name, 
+    C.Customer_Address, 
+    C.Customer_City, 
+    C.Customer_State, 
+    C.Customer_ZipCode, 
+    C.Customer_CreditRating, 
+    CC.Customer_CreditCard_Number
+FROM Customer C JOIN Credit_Card CC ON C.Customer_Identifier = CC.CustomerIdentifier
+--WHERE C.CUSTOMER_IDENTIFIER = 'C0001'
+
+--4. Giả định bổ sung thuộc tính PrederredOption vào bảng Credit_Card để quản lý thẻ tín dụng yêu thích của khách hàng. Khi thông tin khách hàng truy xuất, cho biết thông tin thẻ tín dụng yêu thích của họ.
+SELECT 
+    C.Customer_Identifier, 
+    C.Customer_TelephoneNumber, 
+    C.Customer_Name, 
+    C.Customer_Address, 
+    C.Customer_City, 
+    C.Customer_State, 
+    C.Customer_ZipCode, 
+    C.Customer_CreditRating, 
+    CC.Customer_CreditCard_Number, 
+    CC.Preferred
+FROM Customer C JOIN Credit_Card CC ON C.Customer_Identifier = CC.CustomerIdentifier
+--WHERE C.CUSTOMER_IDENTIFIER = 'C0001'
+
+--5. Cho biết thông tin khách hàng và số lần sử dụng trên mỗi thẻ tín dụng của họ.
+SELECT 
+    C.Customer_Identifier, 
+    C.Customer_TelephoneNumber, 
+    C.Customer_Name, 
+    C.Customer_Address, 
+    C.Customer_City, 
+    C.Customer_State, 
+    C.Customer_ZipCode, 
+    C.Customer_CreditRating, 
+    O.Customer_CreditCard_Number, 
+    O.NumberOfUsage
+FROM 
+    Customer C
+JOIN 
+    (SELECT 
+        O.Customer_Identifier, 
+        O.Customer_CreditCard_Number, 
+        COUNT(O.Customer_CreditCard_Number) AS NumberOfUsage
+     FROM Orders O 
+     GROUP BY O.Customer_Identifier, O.Customer_CreditCard_Number) AS O 
+ON C.Customer_Identifier = O.Customer_Identifier
+
+
 
